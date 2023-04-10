@@ -1,4 +1,5 @@
 import re
+import traceback
 
 __version__ = "5.4.0"
 
@@ -117,7 +118,7 @@ class AtomicShortcode(Shortcode):
             return str(self.handler(self.token.keyword, self.pargs, self.kwargs, context))
         except Exception as ex:
             msg = f"An exception was raised while rendering the "
-            msg += f"'{self.token.keyword}' shortcode in line {self.token.line_number}."
+            msg += f"'{self.token.keyword}' shortcode in line {self.token.line_number}. err: {traceback.format_exc()}"
             raise ShortcodeRenderingError(msg) from ex
 
 

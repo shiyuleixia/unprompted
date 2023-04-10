@@ -6,6 +6,7 @@ class Shortcode():
 		import modules.img2img
 		from modules import sd_samplers
 		from modules import scripts
+		import traceback
 
 		did_error = False
 
@@ -49,7 +50,7 @@ class Shortcode():
 				sampler_index,
 				self.Unprompted.shortcode_user_vars["mask_blur"] if "mask_blur" in self.Unprompted.shortcode_user_vars else 0, # p.mask_blur
 				0.0, #p.mask_alpha
-				0, # p.inpainting_fill
+				self.Unprompted.shortcode_user_vars["inpainting_fill"] if "inpainting_fill" in self.Unprompted.shortcode_user_vars else 0,  # p.inpainting_fill
 				self.Unprompted.shortcode_user_vars["restore_faces"],
 				self.Unprompted.shortcode_user_vars["tiling"],
 				self.Unprompted.shortcode_user_vars["n_iter"] if "n_iter" in self.Unprompted.shortcode_user_vars else 1, #p.n_iter - batch count
@@ -67,7 +68,7 @@ class Shortcode():
 				self.Unprompted.shortcode_user_vars["width"],
 				self.Unprompted.shortcode_user_vars["resize_mode"] if "resize_mode" in self.Unprompted.shortcode_user_vars else 1,
 				self.Unprompted.shortcode_user_vars["inpaint_full_res"] if "inpaint_full_res" in self.Unprompted.shortcode_user_vars else True, # p.inpaint_full_res
-				self.Unprompted.shortcode_user_vars["inpaint_full_res_padding"] if "inpaint_full_res_pdding" in self.Unprompted.shortcode_user_vars else 1, # p.inpaint_full_res_padding
+				self.Unprompted.shortcode_user_vars["inpaint_full_res_padding"] if "inpaint_full_res_padding" in self.Unprompted.shortcode_user_vars else 1, # p.inpaint_full_res_padding
 				0, # p.inpainting_mask_invert
 				"", #p.batch_input_directory
 				"", #p.batch_output_directory
@@ -82,7 +83,8 @@ class Shortcode():
 			# Get the image stored in the first index
 			img2img_images = img2img_result[0]
 		except:
-			self.Unprompted.log("An error occurred while generating the image! Perhaps it was interrupted by the user?")	
+			self.Unprompted.log(traceback.format_exc())
+			self.Unprompted.log("An error occurred while generating the image! Perhaps it was interrupted by the user?")
 			did_error = True
 
 		# Re-enable alwayson scripts

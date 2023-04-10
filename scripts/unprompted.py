@@ -462,6 +462,9 @@ class Scripts(scripts.Script):
 		if not self.allow_postprocess or not is_enabled: return False # Prevents endless loop with some shortcodes
 		self.allow_postprocess = False
 		Unprompted.log("Entering After routine...")
-		for i in Unprompted.after_routines:
-			Unprompted.shortcode_objects[i].after(p,processed)
+		try:
+			for i in Unprompted.after_routines:
+				Unprompted.shortcode_objects[i].after(p,processed)
+		except Exception as e:
+			Unprompted.log(f"Error in After routine: {e}")
 		self.allow_postprocess = True

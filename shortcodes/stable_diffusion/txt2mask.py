@@ -231,7 +231,7 @@ class Shortcode():
 		self.image_mask = get_mask().resize((self.init_image.width,self.init_image.height))
 		
 		if "return_image" in pargs: return(self.image_mask)
-		
+		if "save" in kwargs: self.image_mask.save(f"{self.Unprompted.parse_advanced(kwargs['save'],context)}.png")
 		self.Unprompted.shortcode_user_vars["mode"] = max(4,self.Unprompted.shortcode_user_vars["mode"])
 		self.Unprompted.shortcode_user_vars["image_mask"] =self.image_mask
 		self.Unprompted.shortcode_user_vars["mask"]=self.image_mask

@@ -67,6 +67,8 @@ class Shortcode():
 		padding_original = int(float(self.Unprompted.parse_advanced(kwargs["contour_padding"],context))) if "contour_padding" in kwargs else 0
 		min_area = int(float(self.Unprompted.parse_advanced(kwargs["min_area"],context))) if "min_area" in kwargs else 50
 		target_mask = self.Unprompted.parse_alt_tags(kwargs["mask"],context) if "mask" in kwargs else "face"
+		instance_mask = self.Unprompted.parse_alt_tags(kwargs["instance"],context) if "instance" in kwargs else None
+
 
 		set_pargs = pargs
 		set_kwargs = kwargs
@@ -91,7 +93,6 @@ class Shortcode():
 				append_originals.append(image_pil.copy())
 
 			set_kwargs["txt2mask_init_image"] = image_pil
-			
 			mask_image = self.Unprompted.shortcode_objects["txt2mask"].run_block(set_pargs,set_kwargs,None,target_mask)
 			if save: mask_image.save("zoom_enhance_1.png")
 			# Make it grayscale
@@ -104,10 +105,24 @@ class Shortcode():
 			dilate = cv2.dilate(thresh, horizontal_kernel, iterations=2)
 			vertical_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (5,9))
 			dilate = cv2.dilate(dilate, vertical_kernel, iterations=2)
-
-			# Find contours, filter using contour threshold area
-			cnts = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-			cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+			if instance_mask is not None:
+				self.Unprompted.shortcode_objects["instance2mask"].run_block(set_pargs,set_kwargs,None,instance_mask)
+				instances = self.Unprompted.shortcode_user_vars["image_masks"]
+				if save:
+					for idx,ins_img_pil in enumerate(instances):
+						ins_img_pil.save("{}zoom_enhance_instance.png".format(idx))    
+				cnts = []
+				for idx,instance in enumerate(instances):
+					np_inst = numpy.array(instance)
+					ins_mask = numpy.logical_and(dilate,instance)
+					bak_dilate = numpy.array(dilate)
+					bak_dilate[ins_mask == False] = 0
+					tmps = cv2.findContours(bak_dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+					cnts.extend(tmps[0])
+			else:
+				# Find contours, filter using contour threshold area
+				cnts = cv2.findContours(dilate, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+				cnts = cnts[0] if len(cnts) == 2 else cnts[1]
 
 			if mask_sort_method is not "unsorted":
 				if mask_sort_method=="small-to-big":
@@ -175,23 +190,24 @@ class Shortcode():
 					sub_img=Image.fromarray(image[y1:y2,x1:x2])
 					sub_mask=Image.fromarray(mask_image[y1:y2,x1:x2])
 					sub_img_big = sub_img.resize((upscale_width,upscale_height),resample=upscale_method)
-					if save: sub_img_big.save("zoom_enhance_2.png")
+					if save: sub_img_big.save("{}zoom_enhance_2.png".format(c_idx))
 
 					# blur radius is relative to canvas size, should be odd integer
 					blur_radius = math.ceil(w * blur_radius_orig) // 2 * 2 + 1
 					if blur_radius > 0:
 						sub_mask = sub_mask.filter(ImageFilter.GaussianBlur(radius = blur_radius))
 					
-					if save: sub_mask.save("zoom_enhance_3.png")
+					if save: sub_mask.save("{}zoom_enhance_3.png".format(c_idx))
 
 					self.Unprompted.shortcode_user_vars["img2img_init_image"] = sub_img_big
+					self.Unprompted.shortcode_user_vars["mode"] = 0
 					fixed_image = self.Unprompted.shortcode_objects["img2img"].run_atomic(set_pargs,None,None)
 					if not fixed_image:
 						self.Unprompted.log("An error occurred! Perhaps the user interrupted the operation?")
 						return ""
 
 					# self.Unprompted.shortcode_user_vars["init_images"].append(fixed_image)
-					if save: fixed_image.save("zoom_enhance_4.png")
+					if save: fixed_image.save("{}zoom_enhance_4.png".format(c_idx))
 					# Downscale fixed image back to original size
 					fixed_image = fixed_image.resize((w + padding*2,h + padding*2),resample=downscale_method)
 					
