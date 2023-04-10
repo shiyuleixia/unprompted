@@ -96,7 +96,11 @@ class Shortcode():
             )
 
             # Get the image stored in the first index
-            img2img_images = img2img_result[0]
+            if img2img_result and len(img2img_result) > 0:
+                img2img_images = img2img_result[0]
+            else:
+                return None
+            #img2img_images = img2img_result[0]
         except Exception as e:
             self.Unprompted.log(traceback.format_exc())
             self.Unprompted.log("An error occurred while generating the image! Perhaps it was interrupted by the user?")

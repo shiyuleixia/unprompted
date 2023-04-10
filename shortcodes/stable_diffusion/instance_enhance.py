@@ -22,6 +22,7 @@ class Shortcode():
         from PIL import Image, ImageFilter
         import math
         import traceback
+        #import copy
 
         def sigmoid(x):
             return 1 / (1 + math.exp(-x))
@@ -40,6 +41,7 @@ class Shortcode():
         instance_dialate = True if "instance_dialate" in pargs else False
         img2img = True if "img2img" in pargs else False
         use_workaround = True if "use_workaround" in pargs else False
+        release = True if "release_mode" in pargs else False
         mask_sort_method = self.Unprompted.parse_alt_tags(kwargs["mask_sort_method"],
                                                           context) if "mask_sort_method" in kwargs else "left-to-right"
         downscale_method = self.Unprompted.parse_alt_tags(kwargs["downscale_method"],
@@ -117,6 +119,8 @@ class Shortcode():
             
         if img2img:
             all_images = self.Unprompted.shortcode_user_vars["init_images"]
+            
+        #all_images = copy.deepcopy(all_images)
 
         append_originals = []
         
@@ -182,10 +186,11 @@ class Shortcode():
                 instances_masks = self.Unprompted.shortcode_user_vars["image_masks"]
                 #self.Unprompted.shortcode_user_vars["init_images"] = []
          
-                if mask_sort_method == "right-to-left":
-                    instances_masks = sort_method(instances_masks,True)
-                else:
-                    instances_masks = sort_method(instances_masks,False)
+                if instances_masks and len(instances_masks) > 0:
+                    if mask_sort_method == "right-to-left":
+                        instances_masks = sort_method(instances_masks,True)
+                    else:
+                        instances_masks = sort_method(instances_masks,False)
                 
                 if save:
                     for idx, ins_img_pil in enumerate(instances_masks):
@@ -195,7 +200,10 @@ class Shortcode():
             image = numpy.array(image_pil)
             if save: image_pil.save("instance_enhance_0{}.png".format(image_idx))
                 
-            image_processed = image_pil.copy()
+            if release:
+                image_processed = image_pil
+            else:
+                image_processed = image_pil.copy()
             if use_workaround:
                 append_originals.append(image_processed.copy())
 
@@ -420,7 +428,8 @@ class Shortcode():
         # Add original images
         for appended_image in append_originals:
             self.Unprompted.after_processed.images.append(appended_image)
-        #self.Unprompted.after_processed.images = append_originals
+        if release:
+            self.Unprompted.after_processed.images = append_originals
 
         self.Unprompted.shortcode_user_vars["batch_size"] = batch_size_orig
         self.Unprompted.shortcode_user_vars["n_iter"] = n_iter_orig
