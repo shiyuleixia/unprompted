@@ -134,6 +134,9 @@ class Shortcode():
                 # Find contours of the mask
                 contours, hierarchy = cv2.findContours(mask_np, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+                if len(contours) <= 0:
+                    return instances_mask
+
                 # Calculate moments of the contour
                 moments = cv2.moments(contours[0])
 
@@ -160,6 +163,9 @@ class Shortcode():
 
                 # 计算掩码的轮廓
                 contours, hierarchy = cv2.findContours(mask_np, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+                if len(contours) <= 0:
+                    return instances_mask
 
                 # 计算轮廓的边界框
                 x, y, w, h = cv2.boundingRect(contours[0])
