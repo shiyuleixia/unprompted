@@ -186,7 +186,7 @@ class Shortcode():
                 instances_masks = self.Unprompted.shortcode_user_vars["image_masks"]
                 #self.Unprompted.shortcode_user_vars["init_images"] = []
          
-                if instances_masks and len(instances_masks) > 0:
+                if instances_masks and len(instances_masks) > 1:
                     if mask_sort_method == "right-to-left":
                         instances_masks = sort_method(instances_masks,True)
                     else:
