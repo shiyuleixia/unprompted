@@ -10,7 +10,7 @@ import sys
 
 class Unprompted:
 	def __init__(self, base_dir="."):
-		self.VERSION = "7.9.1"
+		self.VERSION = "8.2.0"
 
 		print(f"Loading Unprompted v{self.VERSION} by Therefore Games")
 		self.log("Initializing Unprompted object...",False,"SETUP")
@@ -122,9 +122,10 @@ class Unprompted:
 		else: return(string)
 		
 
-	def parse_alt_tags(self,string,context=None):
+	def parse_alt_tags(self,string,context=None,parser=None):
 		"""Converts any alt tags and then parses the resulting shortcodes"""
-
+		if string is None or len(string) < 1: return ""
+		if parser is None: parser = self.shortcode_parser
 		# Find maximum nested depth
 		nested = 0
 		while True:
@@ -154,7 +155,7 @@ class Unprompted:
 		# Get rid of the temporary characters
 		string = string.replace(tmp_start,self.Config.syntax.tag_start_alt).replace(tmp_end,self.Config.syntax.tag_end_alt)
 
-		return(self.shortcode_parser.parse(string,context))
+		return(parser.parse(string,context))
 	
 	def log(self,string,show_caller=True,context="DEBUG"):
 		if (context != "DEBUG" or self.Config.debug):
@@ -219,3 +220,15 @@ class Unprompted:
 			# Write response data to file
 			for block in response.iter_content(4096):
 				fout.write(block)
+
+	def color_match(self,img_ref,img_src,method="hm-mkl-hm",iterations=1):
+		from color_matcher import ColorMatcher
+		from color_matcher.normalizer import Normalizer
+		from PIL import Image
+		import numpy
+		cm = ColorMatcher()
+		img_ref = Normalizer(numpy.array(img_ref)).uint8_norm()
+		img_src = Normalizer(numpy.array(img_src)).uint8_norm()
+		for i in range(iterations):
+			img_src = cm.transfer(src=img_src, ref=img_ref, method=method)
+		return(Image.fromarray(Normalizer(img_src).uint8_norm()))	
