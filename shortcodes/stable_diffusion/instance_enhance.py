@@ -22,6 +22,7 @@ class Shortcode():
         from PIL import Image, ImageFilter
         import math
         import traceback
+        import random
         #import copy
 
         def sigmoid(x):
@@ -34,7 +35,6 @@ class Shortcode():
         upscale_height = int(float(
             self.Unprompted.parse_advanced(kwargs["upscale_height"], context))) if "upscale_height" in kwargs else 512
         save = True if "save" in pargs else False
-        random = True if "random" in pargs else False
         sort_by_centroid = True if "sort_by_centroid" in pargs else False
         ema_face = True if "ema_face" in pargs else False
         ema_face_dialate = True if "ema_face_dialate" in pargs else False
@@ -42,6 +42,12 @@ class Shortcode():
         img2img = True if "img2img" in pargs else False
         use_workaround = True if "use_workaround" in pargs else False
         release = True if "release_mode" in pargs else False
+        random_sample = True if "random_sample" in pargs else False
+        include_main_prompt = True if "include_main_prompt" in pargs else False
+        if include_main_prompt:
+            bak_prompt = self.Unprompted.shortcode_user_vars["prompt"]
+        else:
+            bak_prompt = ""
         mask_sort_method = self.Unprompted.parse_alt_tags(kwargs["mask_sort_method"],
                                                           context) if "mask_sort_method" in kwargs else "left-to-right"
         downscale_method = self.Unprompted.parse_alt_tags(kwargs["downscale_method"],
@@ -133,7 +139,7 @@ class Shortcode():
 
                 # Find contours of the mask
                 contours, hierarchy = cv2.findContours(mask_np, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+                
                 if len(contours) <= 0:
                     return instances_mask
 
@@ -163,7 +169,7 @@ class Shortcode():
 
                 # 计算掩码的轮廓
                 contours, hierarchy = cv2.findContours(mask_np, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-
+                
                 if len(contours) <= 0:
                     return instances_mask
 
@@ -226,7 +232,10 @@ class Shortcode():
                 width, height = image_pil.size
                 self.Unprompted.log(f"Processing instance #{c_idx + 1}...")
                 # Set prompt with multi-subject support
-                self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[min(c_idx, len(all_replacements) - 1)]
+                if random_sample:
+                    self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[random.randint(0,len(all_replacements) - 1)] + bak_prompt
+                else:
+                    self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[min(c_idx, len(all_replacements) - 1)] + bak_prompt
              
             
                 #image_copy = Image.composite(image_copy, back_ground,
@@ -373,8 +382,10 @@ class Shortcode():
                                 continue
 
                         # Set prompt with multi-subject support
-                        self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[
-                            min(e_idx, len(all_replacements) - 1)]
+                        if random_sample:
+                            self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[random.randint(0,len(all_replacements) - 1)] + bak_prompt
+                        else:
+                            self.Unprompted.shortcode_user_vars["prompt"] = all_replacements[min(e_idx, len(all_replacements)-1)] + bak_prompt
                         #self.Unprompted.shortcode_user_vars["negative_prompt"] = all_negative_replacements[
                         #    min(c_idx, len(all_negative_replacements) - 1)]
 
@@ -418,7 +429,7 @@ class Shortcode():
                         image_processed.paste(fixed_image,(x1 - padding, y1 - padding), sub_mask)
                         
                         if save:
-                            image_pil.save("{}image_processed_2.png".format(e_idx))
+                            image_processed.save("{}image_processed_2.png".format(e_idx))
 
                         # test outside after block, WIP pls don't use
                         if context != "after":
